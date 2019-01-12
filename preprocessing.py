@@ -84,19 +84,13 @@ def sbxread(filename,k=0,N=None):
 
     return x
 
-def array2h5(arr,h5fname):
+def array2h5(arr,h5fname,dataset="data"):
+    with h5py.File(h5fname,'w') as f:
+        dset = f.create_dataset(dataset,data=arr)
 
-    f = h5py.File(h5fname,'w')
-    dset = f.create_dataset("data",data=arr)
-    f.close()
-    #with h5py.File(h5fname,'w') as f:
-    #    dset = f.create_dataset("data",data=arr)
-    return
-
-
-def sbx2h5(filename):
+def sbx2h5(filename,channel_i=0):
     data = sbxread(filename)
-    data = np.transpose(data[0,:,:,:] ,axes=(2,1,0))
+    data = np.transpose(data[channel_i,:,:,:] ,axes=(2,1,0))
     h5name = filename+'.h5'
     array2h5(data,h5name)
     return h5name
