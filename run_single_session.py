@@ -15,17 +15,26 @@ def sbx_run_pipeline(files, h5_overwrite = False, s2p_overwrite=False,ops_d={},d
             return True
         else:
             return False
+
     # check if s2p results exist
     def check4s2p(f):
-        pass
+        head,tail = os.path.split(f)
+        s2pdir = os.path.join(head,'suite2p','plane0','stat.npy')
+        if os.path.exists(s2pdir):
+            return True
+        else:
+            return False
 
     # run for a single file
     def single_file(f):
-        if h5_overwrite:
-            pass
-        else:
-            pass
 
+        h5exists = check4h5(f)
+        if not h5exists or h5_overwrite:
+            h5fname = pp.sbx2h5(f)
+        else:
+            h5fname = f+'.h5'
+
+        s2pexists = check4s2p(f)
         if s2p_overwrite:
             pass
         else:
@@ -37,11 +46,13 @@ def sbx_run_pipeline(files, h5_overwrite = False, s2p_overwrite=False,ops_d={},d
 
         # run suite2p
 
-        # copy registered binary over to save data folders
+        # move registered binary over to save data folders
+
+        # delete temporary files
 
         return None
 
     if isinstance(files,list) or isinstance(files,tuple):
         _=[single_file(file) for file in files]
     else:
-        single_file(files)
+        _=single_file(files)
