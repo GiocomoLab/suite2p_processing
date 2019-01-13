@@ -2,6 +2,7 @@ import suite2p
 from suite2p.run_s2p import run_s2p
 import preprocessing as pp
 import os
+import shutil
 
 def sbx_run_pipeline(files, h5_overwrite = False, s2p_overwrite=False,ops_d={},db_d={}):
     '''sbx filename stem or list of sbx filename stems
@@ -35,20 +36,36 @@ def sbx_run_pipeline(files, h5_overwrite = False, s2p_overwrite=False,ops_d={},d
             h5fname = f+'.h5'
 
         s2pexists = check4s2p(f)
-        if s2p_overwrite:
-            pass
-        else:
-            pass
+        head,tail = os.path.split(f)
+        if s2pexists:
+            if s2p_overwrite:
+                shutil.rmtree(os.path.join(head,'suite2p'))
+                bindir = os.path.join(db['fast_disk'],'suite2p')
+                try:
+                    shutil.rmtree(bindir)
+            else:
+                print("%s suite2p already done" % f)
+                return None
+
 
         # set ops
+        ops = pp.set_ops(ops_d)
 
         # set db
+        db = pp.set_db(h5fname,d=db_d)
 
         # run suite2p
+        bindir = os.path.join(db['fast_disk'],'suite2p')
+        try:
+            shutil.rmtree(bindir)
+        except:
+            pass
+        run_s2p(ops=ops,db=db)
 
         # move registered binary over to save data folders
-
+        shutil.move(os.path.join(bindir,"plane0","data.bin"),os.path.join(head,"suite2p","data.bin"))
         # delete temporary files
+        shutil.rmtree(bindir)
 
         return None
 
