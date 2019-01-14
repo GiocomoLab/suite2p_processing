@@ -12,7 +12,19 @@ def loadmat(filename):
     which are still mat-objects
     '''
     data = spio.loadmat(filename, struct_as_record=False, squeeze_me=True)
-    return _check_keys(data)
+    info = _check_keys(data)['info']
+    # Defining number of channels/size factor
+    if info['channels'] == 1:
+        info['nChan'] = 2; factor = 1
+    elif info['channels'] == 2:
+        info['nChan'] = 1; factor = 2
+    elif info['channels'] == 3:
+        info['nChan'] = 1; factor = 2
+
+     # Determine number of frames in whole file
+    info['max_idx'] = int(os.path.getsize(filename[:-4] + '.sbx')/info['recordsPerBuffer']/info['sz'][1]*factor/4-1)
+
+    return info
 
 def _check_keys(dict):
     '''
@@ -49,22 +61,23 @@ def sbxread(filename,k=0,N=None):
         filename = filename[:-4]
 
     # Load info
-    info = loadmat(filename + '.mat')['info']
+    info = loadmat(filename + '.mat')#['info']
     #print info.keys()
 
     # Defining number of channels/size factor
-    if info['channels'] == 1:
-        info['nChan'] = 2; factor = 1
-    elif info['channels'] == 2:
-        info['nChan'] = 1; factor = 2
-    elif info['channels'] == 3:
-        info['nChan'] = 1; factor = 2
+    #if info['channels'] == 1:
+    #    info['nChan'] = 2; factor = 1
+    #elif info['channels'] == 2:
+    #    info['nChan'] = 1; factor = 2
+    #elif info['channels'] == 3:
+    #    info['nChan'] = 1; factor = 2
 
-     # Determine number of frames in whole file
-    max_idx = os.path.getsize(filename + '.sbx')/info['recordsPerBuffer']/info['sz'][1]*factor/4-1
+     ## Determine number of frames in whole file
+    #max_idx = os.path.getsize(filename + '.sbx')/info['recordsPerBuffer']/info['sz'][1]*factor/4-1
 
      # Paramters
     #k = 0; #First frame
+    max_idx = info['max_idx']
     if N is None:
         N = max_idx; #Last frame
     else:
@@ -76,10 +89,10 @@ def sbxread(filename,k=0,N=None):
     # Open File
     fo = open(filename + '.sbx')
 
-
-    fo.seek(k*nSamples, 0)
+    print(int(k)*int(nSamples))
+    fo.seek(int(k)*int(nSamples), 0)
     x = np.fromfile(fo, dtype = 'uint16',count = int(nSamples/2*N))
-    x = np.int16((x.max()-x).astype(np.int32)/np.int32(2))
+    x = np.int16((np.int32(65535)-x).astype(np.int32)/np.int32(2))
     x = x.reshape((info['nChan'], info['sz'][1], info['recordsPerBuffer'], int(N)), order = 'F')
 
     return x
@@ -88,12 +101,25 @@ def array2h5(arr,h5fname,dataset="data"):
     with h5py.File(h5fname,'w') as f:
         dset = f.create_dataset(dataset,data=arr)
 
-def sbx2h5(filename,channel_i=0):
-    data = sbxread(filename)
-    data = np.transpose(data[channel_i,:,:,:] ,axes=(2,1,0))
-    h5name = filename+'.h5'
-    array2h5(data,h5name)
-    return h5name
+def sbx2h5(filename,channel_i=0,batch_size=1000,dataset="data",output_name = None):
+    info = loadmat(filename + '.mat')#['info']
+    k = 0
+    if output_name is None:
+        h5fname = filename+'.h5'
+    else:
+        h5fname = output_name
+
+    with h5py.File(h5fname,'w') as f:
+        dset = f.create_dataset(dataset,(int(info['max_idx']), info['recordsPerBuffer'],info['sz'][1]))
+        while k<=info['max_idx']:
+            print(k)
+            data = sbxread(filename,k,batch_size)
+            data = np.transpose(data[channel_i,:,:,:] ,axes=(2,1,0))
+
+            dset[k*batch_size:min(((k+1)*batch_size,info['max_idx'])),:,:]=data
+            k+=batch_size
+
+    return h5fname
 
 
 def default_ops():
