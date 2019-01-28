@@ -92,7 +92,7 @@ def sbxread(filename,k=0,N=None):
     print(int(k)*int(nSamples))
     fo.seek(int(k)*int(nSamples), 0)
     x = np.fromfile(fo, dtype = 'uint16',count = int(nSamples/2*N))
-    x = np.int16((np.int32(65535)-x).astype(np.int32)/np.int32(2))
+    x = np.int16((np.int32(65534)-x).astype(np.int32)/np.int32(2))
     x = x.reshape((info['nChan'], info['sz'][1], info['recordsPerBuffer'], int(N)), order = 'F')
 
     return x
@@ -115,8 +115,9 @@ def sbx2h5(filename,channel_i=0,batch_size=1000,dataset="data",output_name = Non
             print(k)
             data = sbxread(filename,k,batch_size)
             data = np.transpose(data[channel_i,:,:,:] ,axes=(2,1,0))
-
-            dset[k*batch_size:min(((k+1)*batch_size,info['max_idx'])),:,:]=data
+            print(k,min((k+batch_size,info['max_idx'])))
+            dset[k:min((k+batch_size,info['max_idx'])),:,:]=data
+            f.flush()
             k+=batch_size
 
     return h5fname

@@ -20,8 +20,9 @@ def sbx_run_pipeline(files, h5_overwrite = False, s2p_overwrite=False,keep_binar
 
     # check if s2p results exist
     def check4s2p(f):
-        head,tail = os.path.split(f)
-        s2pdir = os.path.join(head,'suite2p','plane0','stat.npy')
+        #head,tail = os.path.split(f)
+        #s2pdir = os.path.join(head,'suite2p','plane0','stat.npy')
+        s2pdir = os.path.join(f,'suite2p','plane0','stat.npy')
         if os.path.exists(s2pdir):
             return True
         else:
@@ -30,6 +31,15 @@ def sbx_run_pipeline(files, h5_overwrite = False, s2p_overwrite=False,keep_binar
     # run for a single file
     def single_file(f):
         head,tail = os.path.split(f)
+
+        s2pexists = check4s2p(f)
+        if s2pexists:
+            if s2p_overwrite:
+                shutil.rmtree(os.path.join(head,'suite2p'))
+            else:
+                print("%s suite2p already done" % f)
+                return None
+
         h5exists = check4h5(f)
         if not h5exists or h5_overwrite:
             h5fname = pp.sbx2h5(f,output_name = os.path.join(h5_output,tail+".h5"))
@@ -39,18 +49,19 @@ def sbx_run_pipeline(files, h5_overwrite = False, s2p_overwrite=False,keep_binar
             else:
                 h5fname =  os.path.join(h5_output,tail+".h5")
 
-        s2pexists = check4s2p(f)
 
-        if s2pexists:
-            if s2p_overwrite:
-                shutil.rmtree(os.path.join(head,'suite2p'))
-            else:
-                print("%s suite2p already done" % f)
-                return None
+
+
 
 
         # set ops
-        ops_d['save_path0']=head
+        outpath = f
+        try:
+            os.makedirs(f)
+        except:
+            print("outpath not created")
+        ops_d = {'save_path0':f}
+        #ops_d['save_path0']=f
         ops = pp.set_ops(ops_d)
 
         # set db
@@ -66,7 +77,7 @@ def sbx_run_pipeline(files, h5_overwrite = False, s2p_overwrite=False,keep_binar
 
         # move registered binary over to save data folders
         if keep_binary:
-            shutil.move(os.path.join(bindir,"plane0","data.bin"),os.path.join(head,"suite2p","data.bin"))
+            shutil.move(os.path.join(bindir,"plane0","data.bin"),os.path.join(outpath,"suite2p","data.bin"))
         # delete temporary files
         shutil.rmtree(bindir)
 
