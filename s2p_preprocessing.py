@@ -64,16 +64,6 @@ def sbxread(filename,k=0,N=None):
     info = loadmat(filename + '.mat')#['info']
     #print info.keys()
 
-    # Defining number of channels/size factor
-    #if info['channels'] == 1:
-    #    info['nChan'] = 2; factor = 1
-    #elif info['channels'] == 2:
-    #    info['nChan'] = 1; factor = 2
-    #elif info['channels'] == 3:
-    #    info['nChan'] = 1; factor = 2
-
-     ## Determine number of frames in whole file
-    #max_idx = os.path.getsize(filename + '.sbx')/info['recordsPerBuffer']/info['sz'][1]*factor/4-1
 
      # Paramters
     #k = 0; #First frame
@@ -137,7 +127,7 @@ def default_ops():
            'functional_chan' : 1, # this channel is used to extract functional ROIs (1-based)
            'diameter':6, # this is the main parameter for cell detection, 2-dimensional if Y and X are different (e.g. [6 12])
            'tau':  1., # this is the main parameter for deconvolution
-           'fs': 15.46,  # sampling rate (total across planes)
+           'fs': 15.4609,  # sampling rate (total across planes)
            # output settings
            'save_mat': False, # whether to save output as matlab files
            'combined': True, # combine multiple planes into a single result /single canvas for GUI
