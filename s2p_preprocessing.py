@@ -104,7 +104,7 @@ def sbx2h5(filename,channel_i=0,batch_size=1000,dataset="data",output_name = Non
         max_idx = info['max_idx']
 
     with h5py.File(h5fname,'w') as f:
-        dset = f.create_dataset(dataset,(int(info['max_idx']), info['recordsPerBuffer'],info['sz'][1]))
+        dset = f.create_dataset(dataset,(int(max_idx), info['recordsPerBuffer'],info['sz'][1]))
         while k<=max_idx: #info['max_idx']:
             print(k)
             data = sbxread(filename,k,batch_size)

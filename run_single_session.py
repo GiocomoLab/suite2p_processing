@@ -47,9 +47,12 @@ def sbx_run_pipeline(files, h5_overwrite = False, s2p_overwrite=False,keep_binar
 
         h5exists = check4h5(f)
         if not h5exists or h5_overwrite:
-            h5fname = pp.sbx2h5(f,output_name = os.path.join(h5_output,tail+".h5"),max_idx=max_idx)
+            if h5_output is None:
+                h5fname = pp.sbx2h5(f,output_name = f+".h5",max_idx=max_idx)
+            else:
+                h5fname = pp.sbx2h5(f,output_name = os.path.join(h5_output,tail+".h5"),max_idx=max_idx)
         else:
-            if h5_output is not None:
+            if h5_output is None:
                 h5fname = f+'.h5'
             else:
                 h5fname =  os.path.join(h5_output,tail+".h5")
