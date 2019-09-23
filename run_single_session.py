@@ -22,13 +22,15 @@ def check4s2p(f):
         return False
 
 def sbx_run_pipeline(files, h5_overwrite = False, s2p_overwrite=False,keep_binary=True,
-                    h5_output=None,ops_d={},db_d={}):
+                    h5_output=None,ops_d={},db_d={},max_idx = None):
     '''files: sbx filename stem or list of sbx filename stems
     h5_overwrite: overwrite h5 file if it exists
     s2p_overwrite: overwrite s2p results
     keep_binary: keep registered binary to rerun s2p if needed
     ops_d: ops to change
     db_d: db settings to change'''
+
+
 
 
     # run for a single file
@@ -45,7 +47,7 @@ def sbx_run_pipeline(files, h5_overwrite = False, s2p_overwrite=False,keep_binar
 
         h5exists = check4h5(f)
         if not h5exists or h5_overwrite:
-            h5fname = pp.sbx2h5(f,output_name = os.path.join(h5_output,tail+".h5"))
+            h5fname = pp.sbx2h5(f,output_name = os.path.join(h5_output,tail+".h5"),max_idx=max_idx)
         else:
             if h5_output is not None:
                 h5fname = f+'.h5'

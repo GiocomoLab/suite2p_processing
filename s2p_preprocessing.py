@@ -91,7 +91,7 @@ def array2h5(arr,h5fname,dataset="data"):
     with h5py.File(h5fname,'w') as f:
         dset = f.create_dataset(dataset,data=arr)
 
-def sbx2h5(filename,channel_i=0,batch_size=1000,dataset="data",output_name = None):
+def sbx2h5(filename,channel_i=0,batch_size=1000,dataset="data",output_name = None, max_idx = None):
     info = loadmat(filename + '.mat')#['info']
     k = 0
     if output_name is None:
@@ -99,9 +99,13 @@ def sbx2h5(filename,channel_i=0,batch_size=1000,dataset="data",output_name = Non
     else:
         h5fname = output_name
 
+
+    if max_idx is None:
+        max_idx = info['max_idx']
+
     with h5py.File(h5fname,'w') as f:
         dset = f.create_dataset(dataset,(int(info['max_idx']), info['recordsPerBuffer'],info['sz'][1]))
-        while k<=info['max_idx']:
+        while k<=max_idx: #info['max_idx']:
             print(k)
             data = sbxread(filename,k,batch_size)
             data = np.transpose(data[channel_i,:,:,:] ,axes=(2,1,0))

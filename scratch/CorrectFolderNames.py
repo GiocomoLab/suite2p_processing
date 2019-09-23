@@ -1,7 +1,7 @@
 import os
 from glob import glob
 os.sys.path.append('..')
-os.sys.path.append("C:\\Users\mplitt\MightyMorphingPhotonRangers")
+os.sys.path.append("C:\\Users\\mplitt\\MightyMorphingPhotonRangers")
 # import MightyMorphingPhotonRangers as mmpr
 import preprocessing as pp
 import numpy as np
