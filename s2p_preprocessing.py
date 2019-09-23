@@ -82,7 +82,7 @@ def sbxread(filename,k=0,N=None):
     print(int(k)*int(nSamples))
     fo.seek(int(k)*int(nSamples), 0)
     x = np.fromfile(fo, dtype = 'uint16',count = int(nSamples/2*N))
-    x = np.int16((np.int32(65534)-x).astype(np.int32)/np.int32(2))
+    x = np.int16((np.int32(65535)-x).astype(np.int32)/np.int32(2))
     x = x.reshape((info['nChan'], info['sz'][1], info['recordsPerBuffer'], int(N)), order = 'F')
 
     return x
@@ -126,7 +126,7 @@ def default_ops():
            'nchannels' : 1, # each tiff has these many channels per plane
            'functional_chan' : 1, # this channel is used to extract functional ROIs (1-based)
            'diameter':6, # this is the main parameter for cell detection, 2-dimensional if Y and X are different (e.g. [6 12])
-           'tau':  1., # this is the main parameter for deconvolution
+           'tau': 2., # 1., # this is the main parameter for deconvolution
            'fs': 15.4609,  # sampling rate (total across planes)
            # output settings
            'save_mat': False, # whether to save output as matlab files
@@ -157,7 +157,7 @@ def default_ops():
            'min_neuropil_pixels': 350, # minimum number of pixels in the neuropil
            # deconvolution settings
            'baseline': 'maximin', # baselining mode
-           'win_baseline': 60., # window for maximin
+           'win_baseline': 300., #60., # window for maximin
            'sig_baseline': 10., # smoothing constant for gaussian filter
            'prctile_baseline': 8.,# optional (whether to use a percentile baseline)
            'neucoeff': .7,  # neuropil coefficient

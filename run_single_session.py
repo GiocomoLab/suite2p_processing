@@ -4,29 +4,32 @@ import s2p_preprocessing as pp
 import os
 import shutil
 
+# check if h5 file exists
+def check4h5(f):
+    if os.path.exists(f+'.h5'):
+        return True
+    else:
+        return False
+
+# check if s2p results exist
+def check4s2p(f):
+    #head,tail = os.path.split(f)
+    #s2pdir = os.path.join(head,'suite2p','plane0','stat.npy')
+    s2pdir = os.path.join(f,'suite2p','plane0','stat.npy')
+    if os.path.exists(s2pdir):
+        return True
+    else:
+        return False
+
 def sbx_run_pipeline(files, h5_overwrite = False, s2p_overwrite=False,keep_binary=True,
                     h5_output=None,ops_d={},db_d={}):
-    '''sbx filename stem or list of sbx filename stems
-    overwrite h5 file if it exists
-    overwrite s2p results
-    ops to change
-    db to change'''
-    # check if h5 file exists
-    def check4h5(f):
-        if os.path.exists(f+'.h5'):
-            return True
-        else:
-            return False
+    '''files: sbx filename stem or list of sbx filename stems
+    h5_overwrite: overwrite h5 file if it exists
+    s2p_overwrite: overwrite s2p results
+    keep_binary: keep registered binary to rerun s2p if needed
+    ops_d: ops to change
+    db_d: db settings to change'''
 
-    # check if s2p results exist
-    def check4s2p(f):
-        #head,tail = os.path.split(f)
-        #s2pdir = os.path.join(head,'suite2p','plane0','stat.npy')
-        s2pdir = os.path.join(f,'suite2p','plane0','stat.npy')
-        if os.path.exists(s2pdir):
-            return True
-        else:
-            return False
 
     # run for a single file
     def single_file(f):
