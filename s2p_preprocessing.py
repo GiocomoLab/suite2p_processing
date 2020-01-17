@@ -108,21 +108,47 @@ def sbx2h5(filename,channel_i=0,batch_size=1000,dataset="data",output_name = Non
         max_idx = info['max_idx']
 
     with h5py.File(h5fname,'w') as f:
-        if info['scanmode']==0: # if bidirectional, clip edge of FOV
-            dset = f.create_dataset(dataset,(int(max_idx), info['sz'][0],info['sz'][1]-bid_clip))
-        else:
-            dset = f.create_dataset(dataset,(int(max_idx), info['sz'][0],info['sz'][1]))
-        while k<=max_idx: #info['max_idx']:
-            print(k)
-            data = sbxread(filename,k,batch_size)
-            if info['scanmode']==0:
-                data = np.transpose(data[channel_i,bid_clip:,:,:],axes=(2,1,0))
+
+        if channel_i==-1:
+            if info['scanmode']==0: # if bidirectional, clip edge of FOV
+                dset = f.create_dataset(dataset,(int(max_idx)*info['nChan'], info['sz'][0],info['sz'][1]-bid_clip))
             else:
-                data = np.transpose(data[channel_i,:,:,:] ,axes=(2,1,0))
-            print(k,min((k+batch_size,info['max_idx'])))
-            dset[k:min((k+batch_size,info['max_idx'])),:,:]=data
-            f.flush()
-            k+=batch_size
+                dset = f.create_dataset(dataset,(int(max_idx)*info['nChan'], info['sz'][0],info['sz'][1]))
+            while k<=max_idx: #info['max_idx']:
+                print(k)
+                data = sbxread(filename,k,batch_size)
+                if info['scanmode']==0:
+                    data = np.transpose(data[:,bid_clip:,:,:],axes=(0,3,2,1))
+                else:
+                    data = np.transpose(data[:,:,:,:] ,axes=(0,3,2,1))
+
+
+                print(k,min((k+batch_size,info['max_idx'])))
+                # channel 0
+                for chan in range(info['nChan']):
+                    dset[k*info['nChan']+chan:min((info['nChan']*(k+batch_size)+chan,info['nChan']*info['max_idx'])):info['nChan'],:,:]=np.squeeze(data[chan,:,:,:])
+
+
+
+
+                f.flush()
+                k+=batch_size
+        else:
+            if info['scanmode']==0: # if bidirectional, clip edge of FOV
+                dset = f.create_dataset(dataset,(int(max_idx), info['sz'][0],info['sz'][1]-bid_clip))
+            else:
+                dset = f.create_dataset(dataset,(int(max_idx), info['sz'][0],info['sz'][1]))
+            while k<=max_idx: #info['max_idx']:
+                print(k)
+                data = sbxread(filename,k,batch_size)
+                if info['scanmode']==0:
+                    data = np.transpose(data[channel_i,bid_clip:,:,:],axes=(2,1,0))
+                else:
+                    data = np.transpose(data[channel_i,:,:,:] ,axes=(2,1,0))
+                print(k,min((k+batch_size,info['max_idx'])))
+                dset[k:min((k+batch_size,info['max_idx'])),:,:]=data
+                f.flush()
+                k+=batch_size
 
     return h5fname
 
