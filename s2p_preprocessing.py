@@ -22,7 +22,7 @@ def loadmat(filename):
         info['nChan'] = 1; factor = 2
 
      # Determine number of frames in whole file
-    info['max_idx'] = int(os.path.getsize(filename[:-4] + '.sbx')/info['recordsPerBuffer']/info['sz'][1]*factor/4-1)
+    info['max_idx'] = int(os.path.getsize(filename[:-4] + '.sbx')/info['recordsPerBuffer']/info['sz'][1]*factor/4/(2-info['scanmode'])-1)
     info['frame_rate']=info['resfreq']/info['config']['lines']*(2-info['scanmode'])
 
     return info
@@ -170,11 +170,12 @@ def default_ops():
         'spatial_taper': 50, # how much to ignore on edges (important for vignetted windows, for FFT padding do not set BELOW 3*ops['smooth_sigma'])
         # cell detection settings
         'roidetect': True, # whether or not to run ROI extraction
+        'sparsemode':True,
         'spatial_scale': 0, # 0: multi-scale; 1: 6 pixels, 2: 12 pixels, 3: 24 pixels, 4: 48 pixels
         'connected': True, # whether or not to keep ROIs fully connected (set to 0 for dendrites)
         'nbinned': 5000, # max number of binned frames for cell detection
         'max_iterations': 20, # maximum number of iterations to do cell detection
-        'threshold_scaling': 5., # adjust the automatically determined threshold by this scalar multiplier
+        'threshold_scaling': 1.5, # adjust the automatically determined threshold by this scalar multiplier
         'max_overlap': 0.75, # cells with more overlap than this get removed during triage, before refinement
         'high_pass': 100, # running mean subtraction with window of size 'high_pass' (use low values for 1P)
         # ROI extraction parameters
@@ -190,7 +191,9 @@ def default_ops():
         'prctile_baseline': 8.,# optional (whether to use a percentile baseline)
         'neucoeff': .7,  # neuropil coefficient
         'xrange': np.array([0, 0]),
-        'yrange': np.array([0, 0])}
+        'yrange': np.array([0, 0]),
+        'input_format':"sbx",
+        'sbx_ndeadcols':0}
     return ops
 
 
