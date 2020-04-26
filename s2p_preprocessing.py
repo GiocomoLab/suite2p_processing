@@ -21,6 +21,9 @@ def loadmat(filename):
     elif info['channels'] == 3:
         info['nChan'] = 1; factor = 2
 
+    if info['scanmode']==0:
+        info['recordsPerBuffer']*=2
+
      # Determine number of frames in whole file
     info['max_idx'] = int(os.path.getsize(filename[:-4] + '.sbx')/info['recordsPerBuffer']/info['sz'][1]*factor/4/(2-info['scanmode'])-1)
     info['frame_rate']=info['resfreq']/info['config']['lines']*(2-info['scanmode'])
@@ -75,7 +78,7 @@ def sbxread(filename,k=0,N=None):
         N = min([N,max_idx-k])
 
     nSamples = info['sz'][1] * info['recordsPerBuffer'] * 2 * info['nChan']
-    #print(nSamples,N)
+    print(nSamples,N)
 
     # Open File
     fo = open(filename + '.sbx')
@@ -92,7 +95,7 @@ def array2h5(arr,h5fname,dataset="data"):
     with h5py.File(h5fname,'w') as f:
         dset = f.create_dataset(dataset,data=arr)
 
-def sbx2h5(filename,channel_i=0,batch_size=1000,dataset="data",output_name = None, max_idx = None):
+def sbx2h5(filename,channel_i=0,batch_size=1000,dataset="data",output_name = None, max_idx = None, bid_clip = 100):
     info = loadmat(filename + '.mat')#['info']
     k = 0
     if output_name is None:
@@ -105,15 +108,47 @@ def sbx2h5(filename,channel_i=0,batch_size=1000,dataset="data",output_name = Non
         max_idx = info['max_idx']
 
     with h5py.File(h5fname,'w') as f:
-        dset = f.create_dataset(dataset,(int(max_idx), info['recordsPerBuffer'],info['sz'][1]))
-        while k<=max_idx: #info['max_idx']:
-            print(k)
-            data = sbxread(filename,k,batch_size)
-            data = np.transpose(data[channel_i,:,:,:] ,axes=(2,1,0))
-            print(k,min((k+batch_size,info['max_idx'])))
-            dset[k:min((k+batch_size,info['max_idx'])),:,:]=data
-            f.flush()
-            k+=batch_size
+
+        if channel_i==-1:
+            if info['scanmode']==0: # if bidirectional, clip edge of FOV
+                dset = f.create_dataset(dataset,(int(max_idx)*info['nChan'], info['sz'][0],info['sz'][1]-bid_clip))
+            else:
+                dset = f.create_dataset(dataset,(int(max_idx)*info['nChan'], info['sz'][0],info['sz'][1]))
+            while k<=max_idx: #info['max_idx']:
+                print(k)
+                data = sbxread(filename,k,batch_size)
+                if info['scanmode']==0:
+                    data = np.transpose(data[:,bid_clip:,:,:],axes=(0,3,2,1))
+                else:
+                    data = np.transpose(data[:,:,:,:] ,axes=(0,3,2,1))
+
+
+                print(k,min((k+batch_size,info['max_idx'])))
+                # channel 0
+                for chan in range(info['nChan']):
+                    dset[k*info['nChan']+chan:min((info['nChan']*(k+batch_size)+chan,info['nChan']*info['max_idx'])):info['nChan'],:,:]=np.squeeze(data[chan,:,:,:])
+
+
+
+
+                f.flush()
+                k+=batch_size
+        else:
+            if info['scanmode']==0: # if bidirectional, clip edge of FOV
+                dset = f.create_dataset(dataset,(int(max_idx), info['sz'][0],info['sz'][1]-bid_clip))
+            else:
+                dset = f.create_dataset(dataset,(int(max_idx), info['sz'][0],info['sz'][1]))
+            while k<=max_idx: #info['max_idx']:
+                print(k)
+                data = sbxread(filename,k,batch_size)
+                if info['scanmode']==0:
+                    data = np.transpose(data[channel_i,bid_clip:,:,:],axes=(2,1,0))
+                else:
+                    data = np.transpose(data[channel_i,:,:,:] ,axes=(2,1,0))
+                print(k,min((k+batch_size,info['max_idx'])))
+                dset[k:min((k+batch_size,info['max_idx'])),:,:]=data
+                f.flush()
+                k+=batch_size
 
     return h5fname
 
@@ -130,6 +165,7 @@ def default_ops():
         'h5py_key': 'data', #key in h5py where data array is stored
         'save_path0': [], # stores results, defaults to first item in data_path
         'subfolders': [],
+        'data_path':[],
         # main settings
         'nplanes' : 1, # each tiff has these many planes in sequence
         'nchannels' : 1, # each tiff has these many channels per plane
@@ -138,12 +174,12 @@ def default_ops():
         'fs': 15.4609,  # sampling rate (PER PLANE - e.g. if you have 12 planes then this should be around 2.5)
         'force_sktiff': False, # whether or not to use scikit-image for tiff reading
         # output settings
-        'preclassify': 0.5, # apply classifier before signal extraction with probability 0.5 (turn off with value 0)
+        'preclassify': 0, # apply classifier before signal extraction with probability 0.5 (turn off with value 0)
         'save_mat': False, # whether to save output as matlab files
         'combined': True, # combine multiple planes into a single result /single canvas for GUI
         'aspect': 1.0, # um/pixels in X / um/pixels in Y (for correct aspect ratio in GUI)
         # bidirectional phase offset
-        'do_bidiphase': False,
+        'do_bidiphase': True,
         'bidiphase': 0,
         # registration settings
         'do_registration': 1, # whether to register data (2 forces re-registration)
@@ -181,7 +217,7 @@ def default_ops():
         # ROI extraction parameters
         'inner_neuropil_radius': 2, # number of pixels to keep between ROI and neuropil donut
         'min_neuropil_pixels': 350, # minimum number of pixels in the neuropil
-        'allow_overlap': False, # pixels that are overlapping are thrown out (False) or added to both ROIs (True)
+        'allow_overlap': True, # pixels that are overlapping are thrown out (False) or added to both ROIs (True)
         # channel 2 detection settings (stat[n]['chan2'], stat[n]['not_chan2'])
         'chan2_thres': 0.65, # minimum for detection of brightness on channel 2
         # deconvolution settings
