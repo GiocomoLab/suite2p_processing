@@ -28,9 +28,12 @@ def loadmat(filename):
         info['recordsPerBuffer'] *= 2
 
     # Determine number of frames in whole file
+    # info['max_idx'] = int(
+    #     os.path.getsize(filename[:-4] + '.sbx') / info['recordsPerBuffer'] / info['sz'][1] * factor / 4 / (
+    #                 2 - info['scanmode']) - 1)
     info['max_idx'] = int(
-        os.path.getsize(filename[:-4] + '.sbx') / info['recordsPerBuffer'] / info['sz'][1] * factor / 4 / (
-                    2 - info['scanmode']) - 1)
+        os.path.getsize(filename[:-4] + '.sbx') / info['recordsPerBuffer'] / info['sz'][1] * factor / 4 - 1)
+    # info['max_idx']=info['frame'][-1]
     info['frame_rate'] = info['resfreq'] / info['config']['lines'] * (2 - info['scanmode'])
 
     return info
