@@ -27,14 +27,22 @@ def loadmat(filename):
     if info['scanmode'] == 0:
         info['recordsPerBuffer'] *= 2
 
+    if 'fold_lines' in info.keys():
+        if info['fold_lines']>0:
+            info['fov_repeats'] = int(info['config']['lines']/info['fold_lines'])
+        else:
+            info['fov_repeats']=1
+    else:
+        info['fold_lines']=0
+        info['fov_repeats']=1
     # Determine number of frames in whole file
     # info['max_idx'] = int(
     #     os.path.getsize(filename[:-4] + '.sbx') / info['recordsPerBuffer'] / info['sz'][1] * factor / 4 / (
     #                 2 - info['scanmode']) - 1)
     info['max_idx'] = int(
-        os.path.getsize(filename[:-4] + '.sbx') / info['recordsPerBuffer'] / info['sz'][1] * factor / 4 - 1)
+        os.path.getsize(filename[:-4] + '.sbx') / info['recordsPerBuffer'] / info['sz'][1] * factor / 4 - 1)*int(info['fov_repeats'])
     # info['max_idx']=info['frame'][-1]
-    info['frame_rate'] = info['resfreq'] / info['config']['lines'] * (2 - info['scanmode'])
+    info['frame_rate'] = info['resfreq'] / info['config']['lines'] * (2 - info['scanmode'])*info['fov_repeats']
 
     return info
 
@@ -87,7 +95,7 @@ def sbxread(filename, k=0, N=None):
     else:
         N = min([N, max_idx - k])
 
-    nSamples = info['sz'][1] * info['recordsPerBuffer'] * 2 * info['nChan']
+    nSamples = info['sz'][1] * info['recordsPerBuffer'] / info['fov_repeats']* 2 * info['nChan']
     print(nSamples, N)
 
     # Open File
@@ -97,7 +105,7 @@ def sbxread(filename, k=0, N=None):
     fo.seek(int(k) * int(nSamples), 0)
     x = np.fromfile(fo, dtype='uint16', count=int(nSamples / 2 * N))
     x = np.int16((np.int32(65535) - x).astype(np.int32) / np.int32(2))
-    x = x.reshape((info['nChan'], info['sz'][1], info['recordsPerBuffer'], int(N)), order='F')
+    x = x.reshape((info['nChan'], info['sz'][1], int(info['recordsPerBuffer']/info['fov_repeats']), int(N)), order='F')
 
     return x
 
@@ -128,7 +136,7 @@ def sbx2h5(filename, channel_i=-1, batch_size=1000, dataset="data", output_name=
     with h5py.File(h5fname, 'w') as f:
 
         if channel_i == -1:
-            dset = f.create_dataset(dataset, (int(max_idx) * nchan, info['sz'][0], info['sz'][1]))
+            dset = f.create_dataset(dataset, (int(max_idx) * nchan, int(info['sz'][0]/info['fov_repeats']), info['sz'][1]))
             while k <= max_idx:  # info['max_idx']:
                 print(k)
                 data = sbxread(filename, k, batch_size)
@@ -144,7 +152,7 @@ def sbx2h5(filename, channel_i=-1, batch_size=1000, dataset="data", output_name=
                 f.flush()
                 k += batch_size
         else:
-            dset = f.create_dataset(dataset, (int(max_idx), info['sz'][0], info['sz'][1]))
+            dset = f.create_dataset(dataset, (int(max_idx), int(info['sz'][0]/info['fov_repeats']), info['sz'][1]))
             while k <= max_idx:  # info['max_idx']:
                 print(k)
                 data = sbxread(filename, k, batch_size)
